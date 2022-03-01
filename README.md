@@ -12,7 +12,7 @@
    
     Submissions will be evaluated based on RMSE (root mean squared error). Lower the RMSE, better the model.
 
-* Disclaimer
+* **Disclaimer**
 
   The data is not supplied by Airbnb. It was scraped from Airbnb's website. We do not either implicitly or 
   explicitly guarantee that the data is exactly what is found on Airbnb's website. This data is to be used solely for the purpose 
