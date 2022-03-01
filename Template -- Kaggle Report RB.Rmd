@@ -1,0 +1,1093 @@
+---
+title: "Assignment: Kaggle Project"
+author: "Romauli Butarbutar"
+date: "12 April 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = F)
+```
+
+# {.tabset}
+
+## Background
+
+A key feature of this class is applying learning to a real-world dataset. This project to be completed individually involves performing steps of data analysis including exploring the data, summarizing it, preparing it, analyzing it, and presenting findings. The project requires you to submit your predictions on the Kaggle competition page, complete a report outlining the process, and make a brief presentation.
+
+## Details
+The first part of this project involves conducting the steps of data analysis to generate a set of predictions. You must submit your Kaggle username and first set of predictions before November 1st and submit at least five sets of predictions before the deadline. Note, there is a limit of three submissions per day.
+
+The second part involves putting together a succinct presentation outlining what you learned from the experience. Your presentation should be supported by just one slide.
+
+The third part is a short report summarizing the data analysis process and what you learned from the experience. Your report should include insights from exploring the data, efforts to prepare the data, and analysis techniques explored. The report should cover not only the ingredients of the final analysis but also the failed steps or missteps along the way. The report must be accompanied by neatly commented R code for the best submission.
+
+## Kaggle Predictions
+The project is hosted on Kaggle where you will be able to get the data from, submit your predictions and monitor your performance.  For this project, you are given a listing of Airbnb rentals in New York City. The goal of this competition is to predict the price for a rental using variables on the property, host, and past reviews. To arrive at the predictions, you are encouraged to apply your learning on data exploration, summarization, preparation, and analysis.
+
+Arriving at good predictions begins with gaining a thorough understanding of the data. This could be gleaned from examining the description of predictors, learning of the types of variables, and inspecting summary characteristics of the variables. Visual exploration may yield insights missed from merely examining descriptive characteristics. Often the edge in predictive modeling comes from variable transformations such as mean centering or imputing missing values. Review the predictors to look for candidates for transformation.
+
+Not all variables are predictive, and models with too many predictors often overfit the data they are estimated on. With the large number of predictors available for this project, it is critically important to judiciously select features for inclusion in the model.
+
+There are a number of predictive techniques discussed in this course, some strong in one area while others strong in another. Furthermore, default model parameters seldom yield the best fit. Each problem is different, therefore deserves a model that is tuned for it.
+
+Finally, predictive modeling is an iterative exercise. It is more than likely that after estimating the model, you will want to go back to the data preparation stage to try a different variable transformation.
+
+## Goal
+Once you construct a set of predictions for Airbnb rentals in the scoring dataset, you will upload your prediction file to Kaggle. Your submission will be evaluated based on RMSE (root mean squared error) and results posted on Kaggle’s Leaderboard. Lower the RMSE, better the model.
+
+
+## Data
+
+The data are available in the file **train.csv**  and **test.csv**.
+
+Disclaimer: The data is not supplied by Airbnb. It was scraped from Airbnb's website. We do not either implicitly or explicitly guarantee that the data is exactly what is found on Airbnb's website. This data is to be used solely for the purpose of the Kaggle Project for this course. It is not recommended for any use outside of this competition.
+
+## Description
+How much should you charge -- or pay -- for an AirBnB rental in New York City? 
+In this competition, you will explore a data set of rental listings and utilize machine learning techniques to predict the price of a rental.
+
+## Evaluation
+The predictions will be evaluated using the root mean squared error (RMSE) between the actual and predicted price of the rentals in the testing set. The evaluation includes two kinds of leaderboards. The public leaderboard is based on the RMSE in a subset of the testing data. The private leaderboard is then based on the RMSE in the remainder of the testing data. While the competition is active, you will only be able to see the results of the public leaderboard.
+
+
+## Preliminary Code
+
+This section of the report is reserved for any work of my plan to do ahead of answering the questions -- such as loading or exploring the data.
+
+```{r read_data}
+#clear memory
+rm(list=ls())
+
+#read the data
+train <- read.csv("../Data/train.csv", stringsAsFactors = T)
+test <- read.csv("../Data/test.csv", stringsAsFactors = T)
+
+dim(train)
+dim(test)
+
+str(train)
+str(test)
+
+head(train)
+
+```
+
+## Part 1 - The steps of data analysis {.tabset}
+The first part of this project involves conducting the steps of data analysis to generate a set of predictions.
+
+There are many types of data including continuous, categorical, text, and date features.
+I try to categories data for better understanding.
+
+**Listing/URL descriptors : **
+listing_url,scrape_id,last_scraped, thumbnail_url, medium_url,picture_url,xl_picture_url
+
+**Host descriptors : **
+host_id, host_url, host_name, host_since, host_location,host_about, host_response_time, host_response_rate,host_acceptance_rate, host_is_superhost ,host_thumbnail_url,host_picture_url,host_neighbourhood,host_listings_count,host_total_listings_count,host_verifications,host_has_profile_pic, host_identity_verified, calculated_host_listings_count
+
+**Location descriptors : **
+street, neighbourhood, neighbourhood_cleansed,neighbourhood_group_cleansed,city,state,zipcode,market,smart_location,country_code,country,latitude,longitude,is_location_exact
+
+**Property  descriptors : **
+property_type, room_type, accommodates, bathrooms, bedrooms, beds,bed_type,amenities,square_feet
+
+**Price descriptor : **
+price,weekly_price,monthly_price,security_deposit,cleaning_fee
+
+**Term of condition descriptor:**
+guests_included, extra_people, minimum_nights,maximum_nights,calendar_updated,calendar_last_scraped,has_availability,availability_30,availability_60,availability_90,availability_365,requires_license,license,jurisdiction_names,cancellation_policy,require_guest_profile_picture,require_guest_phone_verification,instant_bookable, is_business_travel_ready
+
+**Reviews descriptor :**
+number_of_reviews,first_review,last_review,review_scores_rating,review_scores_accuracy,review_scores_cleanliness,review_scores_checkin,review_scores_communication,review_scores_location,review_scores_value,reviews_per_month
+
+**Additional descriptor:**
+id, name, summary, space,description,experiences_offered,neighborhood_overview,notes, transit,access, interaction, house_rules
+
+**After review the data, refer to the common assumption of rental price factors, I exclude some of data that is not relevant to estimate the price, so I will not do further analysis as it have same data or all value are null so I assumed it is not significant. For example: Additional descriptor, Listing/URL descriptors**
+
+**And I just include several important variables including Location descriptors and Property  descriptors. I will also analysis some of other relevant variables from Term of condition descriptor and Reviews and Host descriptor.**
+
+**Other important step in data cleaning is to analysis the word count of the room description/summary and amenities **
+
+### Data Wranngling, Cleaning and Tidying
+
+**Visualizing Data**
+Visualizing data can aid in forming an understanding of the data, identifying trends, and spotting anomalies.
+
+```{r outlier}
+# ***Examine outliers----
+library(ggplot2) 
+ggplot(data=train,aes(x='',y=price))+
+geom_boxplot(outlier.color='red',outlier.alpha=0.5, fill='cadetblue')+ 
+  geom_text(aes(x='',y=median(price),label=median(price)),size=3,hjust=11)+
+  xlab(label = '')
+
+
+```
+
+```{r price_room_type}
+library(ggplot2)
+
+#to compare the price based on room_type
+ggplot(data=train, aes(x=price, y=room_type, fill=price))+
+  geom_bar(stat='summary', fun='median', show.legend=F)+
+  coord_flip()
+
+
+# ggplot(data=train,aes(x=room_type,y=price,color=price))+
+#   geom_point()+
+#   geom_smooth(method='lm',se=F,size=1.2)
+
+```
+
+**Missing and Parsing Data**
+One of the issues is variables not being in the correct format, in this case including:
+*-* last_scraped,host_since,calendar_last_scraped,first_review,last_review :  type is character, need to change to date class
+*-* thumbnail_url, medium_url, xl_picture_url,license : logical with NA?
+*-* host_is_superhost,host_has_profile_pic,host_identity_verified,is_location_exact,has_availability,requires_license,instant_bookable,is_business_travel_ready,require_guest_profile_picture,require_guest_phone_verification : chr  "f" should be factor?
+*-* square_feet,price,weekly_price,monthly_price,security_deposit,cleaning_fee : data type integers   but so many NA value, we need to clean the data
+*-* check country : Uruguay? Country Code:UY, we remove this data.
+*-* blank data in several significant data like beds, square_feet. For other blank data will be ignored in this analysis
+
+
+```{r data_cleaning}
+# STEP 1 DATA CLEANING, WRANGLING, TIDYING
+
+#Reformat data, convert data type 
+library("tidyverse")
+library(dplyr)
+
+#Reformat Date Class
+train$last_scraped = as.Date(train$last_scraped)
+train$host_since = as.Date(train$host_since)
+train$calendar_last_scraped = as.Date(train$calendar_last_scraped)
+train$first_review = as.Date(train$first_review)
+train$last_review = as.Date(train$last_review)
+
+test$last_scraped = as.Date(test$last_scraped)
+test$host_since = as.Date(test$host_since)
+test$calendar_last_scraped = as.Date(test$calendar_last_scraped)
+test$first_review = as.Date(test$first_review)
+test$last_review = as.Date(test$last_review)
+
+#Count the days 
+train$last_scraped_days = as.numeric(as.Date("2021-04-11") - train$last_scraped)
+train$host_since_days = as.numeric(as.Date("2021-04-11") - train$host_since)
+train$calendar_last_scraped_days = as.numeric(as.Date("2021-04-11") - train$calendar_last_scraped)
+train$first_review_days = as.numeric(as.Date("2021-04-11") - train$first_review)
+train$last_review_days = as.numeric(as.Date("2021-04-11") - train$last_review)
+
+test$last_scraped_days = as.numeric(as.Date("2021-04-11") - test$last_scraped)
+test$host_since_days = as.numeric(as.Date("2021-04-11") - test$host_since)
+test$calendar_last_scraped_days = as.numeric(as.Date("2021-04-11") - test$calendar_last_scraped)
+test$first_review_days = as.numeric(as.Date("2021-04-11") - test$first_review)
+test$last_review_days = as.numeric(as.Date("2021-04-11") - test$last_review)
+
+
+#Character Class
+train$summary = as.character(train$summary)
+train$space = as.character(train$space)
+train$description = as.character(train$description)
+train$neighborhood_overview = as.character(train$neighborhood_overview)
+train$transit = as.character(train$transit)
+train$access = as.character(train$access)
+train$house_rules = as.character(train$house_rules)
+train$host_location = as.character(train$host_location)
+train$host_about = as.character(train$host_about)
+train$host_verifications = as.character(train$host_verifications)
+train$amenities = as.character(train$amenities)
+train$neighbourhood_cleansed = as.character(train$neighbourhood_cleansed)
+
+test$summary = as.character(test$summary)
+test$space = as.character(test$space)
+test$description = as.character(test$description)
+test$neighborhood_overview = as.character(test$neighborhood_overview)
+test$transit = as.character(test$transit)
+test$access = as.character(test$access)
+test$house_rules = as.character(test$house_rules)
+test$host_location = as.character(test$host_location)
+test$host_about = as.character(test$host_about)
+test$host_verifications = as.character(test$host_verifications)
+test$amenities = as.character(test$amenities)
+test$neighbourhood_cleansed = as.character(test$neighbourhood_cleansed)
+
+#exclude data
+train <- train[train$country_code != 'UY',]
+test <- test[test$country_code != 'UY',]
+
+#check blank data and impute missing value
+blank_data = colSums(is.na(train))
+blank_data[blank_data > 0]
+
+#train
+for (i in 1:ncol(train)) {
+  if (is.numeric(train[,i])) {
+    train[is.na(train[,i]), i] = mean(train[,i], na.rm = TRUE)
+  }
+  if (is.factor(train[,i])) {
+    train[,i] = addNA(train[,i])
+  }
+}
+#test
+for (i in 1:ncol(test)) {
+  if (is.numeric(test[,i])) {
+    test[is.na(test[,i]), i] = mean(test[,i], na.rm = TRUE)
+  }
+  if (is.factor(test[,i])) {
+    test[,i] = addNA(test[,i])
+  }
+}
+
+# colSums(is.na(test))
+sum(is.na(train$summary))
+sum(is.na(test$summary))
+
+
+#Word count for character data types
+library(ngram)
+library(dplyr)
+train = train %>%
+  rowwise() %>%
+  mutate(wc_summary = wordcount(summary),
+         wc_space = wordcount(space),
+         wc_description = wordcount(description),
+         wc_neighborhood_overview = wordcount(neighborhood_overview),
+         wc_transit = wordcount(transit),
+         wc_access = wordcount(access),
+         wc_house_rules = wordcount(house_rules),
+         wc_host_location = wordcount(host_location),
+         wc_host_about = wordcount(host_about),
+         wc_host_verifications = wordcount(host_verifications),
+         wc_amenities = wordcount(amenities),
+         wc_neighbourhood_cleansed = wordcount(neighbourhood_cleansed)
+  )
+
+test = test %>%
+  rowwise() %>%
+  mutate(wc_summary = wordcount(summary),
+         wc_space = wordcount(space),
+         wc_description = wordcount(description),
+         wc_neighborhood_overview = wordcount(neighborhood_overview),
+         wc_transit = wordcount(transit),
+         wc_access = wordcount(access),
+         wc_house_rules = wordcount(house_rules),
+         wc_host_location = wordcount(host_location),
+         wc_host_about = wordcount(host_about),
+         wc_host_verifications = wordcount(host_verifications),
+         wc_amenities = wordcount(amenities),
+         wc_neighbourhood_cleansed = wordcount(neighbourhood_cleansed)
+  )
+
+
+#Check different types of amenities to be included in the model analysis using Regular Expressions functions
+# Then we will choose the common searching amenities to included in rental
+
+# head(train$amenities)
+# head(test$amenities)
+
+library(stringr)
+library(qdapTools)
+library(eply)
+# install.packages("eply")
+
+train$amenities = gsub("[^[:alnum:]]", "", train$amenities)
+train$amenities = gsub('([[:upper:]])', ' \\1', train$amenities)
+train$amenities =  strsplit(train$amenities," ")
+train = cbind(train, mtabulate(train$amenities))
+
+# neighbourhood_cleansed : multiple factoral levels
+train_nc = train %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarize(n = n(), meanPrice = mean(price)) %>%  
+  arrange(desc(n))
+
+train = merge(train, train_nc, by = c("neighbourhood_cleansed", "neighbourhood_cleansed"))
+
+## reduce the level
+train$neighbourhood_cleansed = as.character(train$neighbourhood_cleansed) 
+train = train %>%
+  mutate(level_nc = ifelse(n > 150, neighbourhood_cleansed, "other"))
+train$neighbourhood_cleansed = as.factor(train$neighbourhood_cleansed)
+train$level_nc = as.factor(train$level_nc)
+
+test_nc = test %>%
+  group_by(neighbourhood_cleansed = neighbourhood_cleansed) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+test = merge(test, test_nc, by = c("neighbourhood_cleansed", "neighbourhood_cleansed"))
+
+test$neighbourhood_cleansed = as.character(test$neighbourhood_cleansed)
+test = test %>%
+  mutate(level_nc = ifelse(n > 30, neighbourhood_cleansed, "other"))
+test$level_nc = as.factor(test$level_nc)
+
+#create the average price 
+train2 = data.frame(neighbourhood_cleansed = train_nc$neighbourhood_cleansed,
+                    meanPrice = train_nc$meanPrice)
+
+test = merge(test, train2, by = c("neighbourhood_cleansed", "neighbourhood_cleansed"), all.x = TRUE) 
+
+## find NA value
+#sum(is.na(test$meanPrice))
+test[is.na(test$meanPrice),]$meanPrice = mean(test$meanPrice, na.rm = TRUE)
+
+# neighbourhood_group_cleansed: multiple factoral levels
+train3 = train %>%
+  group_by(neighbourhood_group_cleansed = neighbourhood_group_cleansed) %>%
+  summarize(meanPriceGC = mean(price))
+
+train = merge(train, train3, by = c("neighbourhood_group_cleansed", "neighbourhood_group_cleansed"))
+test = merge(test, train3, by = c("neighbourhood_group_cleansed", "neighbourhood_group_cleansed"), all.x = TRUE)
+
+## check NA value
+sum(is.na(test$meanPriceGC))
+
+```
+
+### Feature Selection {.tabset}
+We will perform  several technique of feature selection to get more relevance predictors. This selection will reduce the effect of multicollinearity as theoretically the number of predictors increases, the chance of finding correlations among a predictor or a set of predictors increases that leading to inflation of standard errors of coefficients and erroneous conclusions. 
+
+
+#### 1. Corrplot
+The result of Corrplot shows that the Variance Inflating Factor (VIF) in the range of 1<VIF<5 that means no significant of threat of collinearity.
+```{r corrplot}
+# 1. Corrplot
+library(corrplot)
+indexPrice <- match('price', names(train))
+indexPrice
+corrplot(cor(train[,-61]),method = 'square',type = 'lower',diag = F)
+
+# Threat of collinearity can also come from linear relationships between sets of variables. One way to assess the threat of multicollinearity in a linear regression is to compute the Variance Inflating Factor (VIF). 1<VIF<Inf. VIF>10 indicates serious multicollinearity while 5<VIF<10 may warrant examination.
+library(car)
+vif(modelMixSig)
+
+```
+#### 2. Best Subset Selection
+```{r bestsubset_selection}
+# ~~Best Subset Selection:regsubsets()----
+# In this approach, we test all possible subsets of p predictors.
+
+library(leaps)
+subsets1 = regsubsets(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train, nvmax=29)
+summary(subsets1)
+names(summary(subsets1))
+
+subsets_measures1 = data.frame(model=1:length(summary(subsets)$cp),
+                              cp=summary(subsets1)$cp,
+                              bic=summary(subsets1)$bic,
+                              adjr2=summary(subsets1)$adjr2)
+subsets_measures1
+
+#***the lowest : which.min(summary(subsets)$cp)
+which.min(summary(subsets1)$cp)
+## [1] 29
+
+coef(subsets1,which.min(summary(subsets)$cp))
+
+
+modelBS <- lm(price~  room_type + accommodates + bathrooms + bedrooms + beds + square_feet  + neighbourhood_group_cleansed + host_is_superhost + host_response_time + cleaning_fee + reviews_per_month + last_review +review_scores_rating + review_scores_cleanliness + review_scores_checkin + review_scores_communication + review_scores_location + review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+ cancellation_policy,data = train)
+
+predBS= predict(modelBS)
+rmseBS = sqrt(mean((predBS-train$price)^2)); rmseBS
+# [1] 67.90036
+
+predicted.prices <- predict.lm(object = modelBS, newdata = test)
+submission <- data.frame(id = test$id, price = predicted.prices)
+write.csv(x = submission, file = "Model BS Predictions.csv", row.names = FALSE)
+subBS = read.csv('../Analysis/Model BS Predictions.csv')
+sum(is.na(subBS))
+
+```
+**After perform best subset selection, the least RSME is about 67.90036**
+
+#### 3. Forward and Hybrid Selection
+
+```{r forward_selection}
+# Forward Selection
+start_mod = lm(price~1,data=train)
+empty_mod = lm(price~1,data=train)
+full_mod = lm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train)
+forwardStepwise = step(start_mod,
+                       scope=list(upper=full_mod,lower=empty_mod),
+                       direction='forward')
+
+summary(forwardStepwise)
+# host_response_time is not significant, so remove it
+modelFS <- lm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train)
+
+predFS= predict(modelFS)
+rmseFS = sqrt(mean((predFS-train$price)^2)); rmseFS
+# [1] 67.93774
+
+# Stepwise Variable Selection : Result similar with forwardStepwise
+start_mod = lm(price~1,data=train)
+empty_mod = lm(price~1,data=train)
+full_mod = lm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train)
+hybridStepwise = step(start_mod,
+                      scope=list(upper=full_mod,lower=empty_mod),
+                      direction='both')
+
+summary(hybridStepwise)
+
+modelSW <- lm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train)
+
+predSW= predict(modelSW)
+rmseSW = sqrt(mean((predSW-train$price)^2)); rmseSW
+
+```
+
+**After perform best forward stepwise and hybrid stepwise, the least RSME is about 67.93774, there is no significant different with best subset selection**
+
+#### 4. Shrinkage : Lasso & PCA
+```{r shrinkage}
+# Shrinkage
+# Ridge
+#install.packages('glmnet')
+library(glmnet)
+x = model.matrix(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy-1,data=train)
+y = train$price
+ridgeModel = glmnet(x,y,alpha=0)
+plot(ridgeModel,xvar='lambda',label=T)
+
+# For cv.glmnet, default is 10-fold cross validation
+
+set.seed(1708)
+cv.ridge = cv.glmnet(x,y,alpha=0)
+plot(cv.ridge)
+
+coef(cv.ridge)
+
+# Lasso
+# Note default for alpha in glmnet is 1 which corresponds to Lasso
+
+lassoModel = glmnet(x,y, alpha=1)
+plot(lassoModel,xvar='lambda',label=T)
+plot(lassoModel,xvar='dev',label=T)
+
+set.seed(1708)
+cv.lasso = cv.glmnet(x,y,alpha=1) # 10-fold cross-validation
+plot(cv.lasso)
+coef(cv.lasso)
+
+# insignificant variable after lasso: beds+bed_type+square_feet+host_is_superhost+calculated_host_listings_count+number_of_reviews+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_value+extra_people+is_business_travel_ready+availability_90+availability_365+cancellation_policy
+
+modelLasso<- lm(price ~room_type+accommodates+bathrooms+bedrooms+neighbourhood_group_cleansed+cleaning_fee+reviews_per_month+last_review+review_scores_location+availability_30,data=train)
+
+predLasso= predict(modelLasso)
+rmseLasso = sqrt(mean((predLasso-train$price)^2)); rmseLasso
+# [1] 68.38622
+
+# Dimension Reduction is not working
+# In this approach, p predictors are reduced to a smaller number of components based on a measure of similarity (e.g., correlation). Here, we will examine a popular dimension reduction technique called Principal Components Analysis.
+
+# Extract the predictors to be reduced.
+
+trainPredictors = train[,-61]
+testPredictors = test[,-61]
+
+# Conduct Principal Components Analysis on train sample. Principal components analysis will always generate as many components as variables. The first few components contain the most amount of variance. One heuristic for number of components to retain is a cumulative variance greater than 70%. In this case, we are extracting only six of eleven components.
+
+# data2 <- data2[,-1]
+# rownames(trainPredictors) <- as.factor(trainPredictors[,61])
+
+pca = prcomp(trainPredictors,scale. = T)
+# > pca = prcomp(trainPredictors,scale. = T)
+# Error in colMeans(x, na.rm = TRUE) : 'x' must be numeric
+train_components = data.frame(cbind(pca$x[,1:20], price = train$price))
+# Let’s examine the components generated for these six components for the first 6 obs
+head(train_components)
+# Construct a model using the components derived from the original predictors
+train_model = lm(quality~.,train_components)
+summary(train_model)
+
+# Before we can apply the train model to the test set, we need to ensure that we apply the same variable transformations for the train sample on the test sample. Specifically, we need to apply the same component structure from the train sample predictors to the test predictors. Note, we are not running a fresh principal components analysis on the test sample, rather we are imposing the train component structure on the test sample.
+
+test_pca = predict(pca,newdata=testPredictors)
+test_components = data.frame(cbind(test_pca[,1:6], quality = test$quality))
+# Note, train_components and test_components have the same structure.
+str(train_components)
+str(test_components)
+# Finally, we evaluate the estimated train model on the test data to assess model performance.
+pred = predict(train_model,newdata=test_components)
+sse = sum((pred-test_components$quality)^2)
+sst = sum((mean(train_components$quality) - test_components$quality)^2)
+r2_test = 1 - sse/sst
+r2_test
+
+```
+
+**After perform shrinkage, the least RSME  using Lasso method is about 68.38622, higher RMSE than the previous technique, while Dimension Reduction is not working for some errors that I need to find out**
+
+
+### Creating Model {.tabset}
+We will perform some models with several technique to get less RMSE value.
+
+#### 1. MODEL SAMPLE
+```{r model_sample}
+#MODEL SAMPLE
+modSample <- lm(formula = price ~ bedrooms, data = train)
+predicted.prices <- predict.lm(object = modSample, newdata = test)
+
+submission <- data.frame(id = test$id, price = predicted.prices)
+write.csv(x = submission, file = "Model 1 Predictions.csv", row.names = FALSE)
+
+summary(modSample)$r.squared
+pred1 <- predict.lm(object = modSample, newdata = test)
+rmse1 = sqrt(mean((pred1-train$price)^2)); rmse1
+# [1] 112.2734
+
+```
+#### 2. LINEAR REGRESSION MODEL {.tabset}
+##### 2.1. Linear Regression: Property Descriptors
+```{r property_descriptors}
+#MODEL LINEAR REGRESSION 1 USING ALL PROPERTY DESCRIPTORS
+# property_type, room_type, accommodates, bathrooms, bedrooms, beds,bed_type,amenities,square_feet
+
+model_property <- lm(formula = price ~ as.factor(property_type)+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet, data = train)
+summary(model_property)
+
+#significant variable : as.factor(property_type)+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet
+```
+
+##### 2.2. Linear Regression: Location Descriptors
+```{r location_descriptors}
+# **Location descriptors : **
+# street, neighbourhood, neighbourhood_cleansed,neighbourhood_group_cleansed,city,state,zipcode,market,smart_location,country_code,country,latitude,longitude,is_location_exact
+
+model_Loc <- lm(formula = price ~ neighbourhood_group_cleansed+is_location_exact, data = train)
+summary(model_Loc)
+# significant variable : neighbourhood_group_cleansed+is_location_exact
+
+# **Listing/URL descriptors : ** 
+model_listing <- lm(formula = price~last_scraped, data = train)
+summary(model_listing)
+#significant variable : nothing
+```
+
+##### 2.3. Linear Regression: Host Descriptors
+```{r host_descriptors}
+# **Host descriptors : **
+# host_id, host_url, host_name, host_since, host_location,host_about, host_response_time, host_response_rate,host_acceptance_rate, host_is_superhost ,host_thumbnail_url,host_picture_url,host_neighbourhood,host_listings_count,host_total_listings_count,host_verifications,host_has_profile_pic, host_identity_verified, calculated_host_listings_count
+# host_acceptance_rate : make error
+
+model_host <- lm(formula = price ~host_is_superhost+host_response_time+host_response_rate+calculated_host_listings_count, data = train)
+summary(model_host)
+
+
+# **Fee descriptor : **
+# price,weekly_price,monthly_price,security_deposit,cleaning_fee
+
+model_fee <- lm(formula = price ~security_deposit+cleaning_fee, data = train)
+summary(model_fee)
+
+```
+
+##### 2.4. Linear Regression: Location Descriptors
+
+```{r reviews_descriptors}
+# **Reviews descriptor :**
+# number_of_reviews,first_review,last_review,review_scores_rating,review_scores_accuracy,review_scores_cleanliness,review_scores_checkin,review_scores_communication,review_scores_location,review_scores_value,reviews_per_month
+
+model_review <- lm(formula = price ~number_of_reviews+reviews_per_month+first_review+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value, data = train)
+summary(model_review)
+
+# insignificant:review_scores_rating, reviews_per_month
+
+```
+
+##### 2.5. Linear Regression: Condition Descriptors
+
+```{r tor_descriptors}
+# **Term of condition descriptor:**
+# guests_included, extra_people, minimum_nights,maximum_nights,calendar_updated,calendar_last_scraped,has_availability,availability_30,availability_60,availability_90,availability_365,requires_license,license,jurisdiction_names,cancellation_policy,require_guest_profile_picture,require_guest_phone_verification,instant_bookable, is_business_travel_ready
+
+model_desc = lm(formula = price ~guests_included+extra_people+minimum_nights+maximum_nights+availability_30+availability_60+availability_90+availability_365+calendar_last_scraped+cancellation_policy+jurisdiction_names+require_guest_profile_picture+require_guest_phone_verification+instant_bookable+is_business_travel_ready, data = train)
+summary(model_desc)
+
+#significant: extra_people,instant_bookable+is_business_travel_ready,availability_30,availability_90,availability_365,cancellation_policysuper_strict_30/60
+
+# insifnificant:minimum_nights+maximum_nights,availability_60, calendar_updated,calendar_last_scraped,jurisdiction_names
+#has_availability,requires_license,license make error
+
+# **Additional descriptor:**
+# id, name, summary, space,description,experiences_offered,neighborhood_overview,notes, transit,access, interaction, house_rules
+
+model_add = lm(formula = price ~ , data = train)
+summary(model_add)
+```
+
+##### 2.6. Linear Regression: Significant Variables
+
+```{r significant_descriptors}
+
+modelMix = lm(formula = price ~ as.factor(property_type)+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+is_location_exact+last_scraped+host_is_superhost+host_response_time+host_response_rate+calculated_host_listings_count+security_deposit+cleaning_fee+number_of_reviews+reviews_per_month+first_review+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+instant_bookable+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy, data = train)
+
+summary(modelMix)
+
+#Remove insignificant variable from Model Mix : is_location_exact,last_scraped,security_deposit, number_of_reviews,first_review,instant_bookable+cancellation_policy
+modelMixSig = lm(formula = price ~ as.factor(property_type)+room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+host_response_rate+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy, data = train)
+
+
+#working on test dataset
+modelMixSig = lm(formula = price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy, data = train)
+
+summary(modelMixSig)
+predMix= predict(modelMixSig)
+rmseMix = sqrt(mean((predMix-train$price)^2)); rmseMix
+# [1] 67.89162
+
+#FILE SUBMISSION
+predicted.prices <- predict.lm(object = modelMixSig, newdata = test)
+submission <- data.frame(id = test$id, price = predicted.prices)
+write.csv(x = submission, file = "Model Mix Predictions.csv", row.names = FALSE)
+
+subMix = read.csv('../Analysis/Model Mix Predictions.csv')
+sum(is.na(subMix))
+
+```
+**After perform several linear regression of descriptor categories and selected significant independent variables from each models, the least RSME is about 67.89162**
+
+
+#### 3. TREE MODEL {.tabset}
+##### 3.1 Simple Regression Tree
+```{r regTree1}
+
+# Regression Tree1
+# Since sold is a binary variable with values of 0 and 1, one can use a regression tree, interpreting the prediction as a probability. For a regression tree, use method=‘anova’ in rpart(). However, if you do not mention the method, rpart will use method=‘anova’ as it is the default.
+
+# Estimate
+library(rpart)
+regTree1 = rpart(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,method = 'anova')
+# Inference
+# Based on inverted tree generated from running a CART model, does startprice appear to influence whether an iPad is sold?
+library(rpart.plot)
+rpart.plot(regTree1)
+
+# Now, let examine the summary to better understand the tree output. How many nodes does the final tree contain? How many nodes did the algorithm consider? What is the complexity parameter used to decide on the number of nodes to retain? How many leaves does the tree have?
+summary(regTree1)
+
+# Predict
+predRegTree1= predict(regTree1)
+rmseRegTree1 = sqrt(mean((predRegTree1-train$price)^2)); rmseRegTree1
+# [1] 72.12098
+```
+
+**After perform Simple Regression Tree, the least RSME  is about 72.12098, higher RMSE than the previous technique.** 
+
+#####3.2 Regression Tree Complex
+Let us construct a larger tree by changing the value of cp. In general, the smaller the value of cp, the larger the tree and the greater the complexity of the model.
+
+```{r regTreeComplex}
+# Regression Tree1 Complex
+regTree1_complex = rpart(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,train,cp=0.005)
+rpart.plot(regTree1_complex)
+summary(regTree1_complex)
+# Predict
+predRegTreeC= predict(regTree1_complex)
+rmseRegTreeC = sqrt(mean((predRegTreeC-train$price)^2)); rmseRegTreeC
+# [1] 69.49447
+
+```
+**After perform Complex Regression Tree, the least RSME is about 69.49447, lowest RMSE than Simple Regression Tree.** 
+
+##### 3.3 Advanced Tree
+Perform Advanced Tree technique using the default value of cp is 0.01
+
+```{r Advanced Tree}
+# Default Tree
+# The default value of cp is 0.01
+
+library(rpart); library(rpart.plot)
+tree = rpart(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train)
+pred = predict(tree,newdata=train)
+rmse_tree = sqrt(mean((pred-train$price)^2)); rmse_tree
+# [1] 72.12098
+
+# Maximal Tree
+# This is the largest possible tree.
+
+maximalTree = rpart(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,control=rpart.control(cp=0))
+pred = predict(maximalTree,newdata=train)
+rmse_maximalTree = sqrt(mean((pred-train$price)^2)); rmse_maximalTree
+# [1] 51.00288
+
+#FILE SUBMISSION
+# predicted.prices <- predict.lm(object = maximalTree, newdata = test)
+# submission <- data.frame(id = test$id, price = predicted.prices)
+# write.csv(x = submission, file = "Model maximalTree Predictions.csv", row.names = FALSE)
+#
+# subMix = read.csv('../Analysis/Model maximalTree Predictions.csv')
+# sum(is.na(subMix))
+
+```
+
+**After perform Advanced Tree, the least RSME is about 51.00288, lowest RMSE than other methods, but with note for file submission is not working and there are some errors that I need to address.** 
+
+##### 3.4 Tree with Tuning
+I also perform Tune the complexity of a tree using 5-fold cross-validation. Here, we will examine cross-validation error for 100 different values of cp.
+
+```{r Tuning Tree}
+# Tune the complexity of a tree using 5-fold cross-validation. Here, we will examine cross-validation error for 100 different values of cp.
+
+library(caret)
+trControl = trainControl(method='cv',number = 5)
+tuneGrid = expand.grid(.cp = seq(from = 0.001,to = 0.1,by = 0.001))
+set.seed(1708)
+cvModel = train(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+                data=train,
+                method="rpart",
+                trControl = trControl,
+                tuneGrid = tuneGrid)
+
+cvModel$results
+
+# Results from Tuning
+
+library(ggplot2)
+ggplot(data=cvModel$results, aes(x=cp, y=RMSE))+
+  geom_line(size=0.5,alpha=0.2)+
+  geom_point(color='brown')+
+  theme_bw()+
+  ggtitle(label=paste('Lowest RMSE is at a cp of ',cvModel$bestTune$cp))
+
+# FILE SUBMISSION
+predicted.prices <- predict.lm(object = maximalTree, newdata = test)
+submission <- data.frame(id = test$id, price = predicted.prices)
+write.csv(x = submission, file = "Model maximalTree Predictions.csv", row.names = FALSE)
+
+subMix = read.csv('../Analysis/Model maximalTree Predictions.csv')
+sum(is.na(subMix))
+
+# Evaluate Tuned model on Test sample
+
+cvTree = rpart(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,cp = cvModel$bestTune$cp)
+pred = predict(cvTree,newdata=train)
+rmse_cvTree = sqrt(mean((pred-train$price)^2)); rmse_cvTree
+
+# # [1] 64.24447
+```
+
+**After perform Advanced Tree, the least RSME is about 64.24447, higher than previous method.**
+
+#### 4. BOOTSRAPPING MODELS
+Bootstrap Aggregation models generate a large number of bootstrapped samples. A tree is fit to each bootstrapped sample. Predictions are generating as an average of all models (for numerical outcome variables) or the majority group (for categorical outcome variables).
+
+```{r Bootstrapping}
+# Bag Models
+# These models can be implemented using many packages including randomForest,adabag, bagEarth, treeBag, bagFDA. In this illustration, we are using a randomForest model by setting mtry to be the number of predictors, i.e., 5.
+
+library(randomForest)
+set.seed(1708)
+bag = randomForest(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,mtry = ncol(train)-1,ntree=1000)
+pred = predict(bag,newdata=train)
+rmse_bag = sqrt(mean((pred-traib$price)^2)); rmse_bag
+
+# The various trees that were fit vary in their size
+hist(treesize(bag))
+# Generally speaking, error for a bag model decreases with an increase in the trees.
+plot(bag)
+
+# Relative importance of predictors
+varImpPlot(bag)
+importance(bag)
+```
+
+# Random Forest Models
+
+```{r randomForest}
+# Unlike bag models which consider all predictors in constructing each tree, randomForest models consider a subset of predictors (default is p/3 for numerical outcomes or sqrt(p) for categorical outcomes) for constructing each tree. In library(randomForest), the mtry controls number of variables considered for each tree.
+
+library(randomForest)
+set.seed(1708)
+forest = randomForest(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,ntree = 1000)
+pred = predict(forest,newdata=train)
+rmse_forest = sqrt(mean((pred-train$price)^2)); rmse_forest
+
+# As in the case for bags, more trees reduces error to a certain point, after which the graph asymptotes.
+plot(forest)
+# importance of predictors
+varImpPlot(forest)
+
+# Tuned Random Forest
+# The mtry parameter of a randomForest model can be tuned to improve model predictions. Here, we will use 5-fold cross validation to examine four values of mtry.
+
+trControl=trainControl(method="cv",number=5)
+tuneGrid = expand.grid(mtry=1:4)
+set.seed(617)
+cvModel = train(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,
+                 method="rf",ntree=1000,trControl=trControl,tuneGrid=tuneGrid )
+cvModel
+
+# Now, let us use the best mtry of 2.
+
+cvForest = randomForest(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,ntree = 1000,mtry=cvModel$bestTune$mtry)
+pred = predict(cvForest,newdata=test)
+rmse_cv_forest = sqrt(mean((pred-test$earn)^2)); rmse_cv_forest
+
+# Forest with Ranger
+# ranger is popular R library for running random forest models.
+
+library(ranger)
+forest_ranger = ranger(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,data=train,num.trees = 1000)
+pred = predict(forest_ranger, data =test,num.trees = 1000)
+rmse_forest_ranger = sqrt(mean((pred$predictions-test$earn)^2)); rmse_forest_ranger
+
+# Tuned Forest Ranger
+# Tuning ranger model for different values of mtry, splitrule and min.node.size
+
+trControl=trainControl(method="cv",number=5)
+tuneGrid = expand.grid(mtry=1:4,
+                       splitrule = c('variance','extratrees','maxstat'),
+                       min.node.size = c(2,5,10,15,20,25))
+set.seed(617)
+cvModel = train(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+                data=train,
+                method="ranger",
+                num.trees=1000,
+                trControl=trControl,
+                tuneGrid=tuneGrid )
+cv_forest_ranger = ranger(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+                          data=train,
+                          num.trees = 1000,
+                          mtry=cvModel$bestTune$mtry,
+                          min.node.size = cvModel$bestTune$min.node.size,
+                          splitrule = cvModel$bestTune$splitrule)
+pred = predict(cv_forest_ranger, data =test, num.trees = 1000)
+rmse_cv_forest_ranger = sqrt(mean((pred$predictions-test$earn)^2)); rmse_cv_forest_ranger
+
+# Boosting Models
+# Like bag and forest models, boosting models fit a tree to bootstrapped samples. The key differenc is that in boosting, trees are grown sequentially, each tree is grown using information from previously grown trees. Thus, boosting can be seen as a slow learning evolutionary model. Since we are predicting a numerical variable, earn, the distributio is set to ‘gaussian’. Had the goal been to predict a binary outcome, we would have set distribution to ‘bernoulli’.
+
+library(gbm)
+set.seed(617)
+boost = gbm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+            data=train,
+            distribution="gaussian",
+            n.trees = 500,
+            interaction.depth = 2,
+            shrinkage = 0.01)
+
+# Boosting models offer a way to examine the relative influence of variables.
+summary(boost)
+
+# Let us examine RMSE for the train sample.
+pred = predict(boost,n.trees = 500)
+rmse_boost_train = sqrt(mean((pred-train$price)^2)); rmse_boost_train
+
+# Now, examine RMSE for test sample.
+pred = predict(boost,newdata=test,n.trees = 500)
+rmse_boost = sqrt(mean((pred-train$price)^2)); rmse_boost
+
+# Boosting with cross-validation
+# Boosting models are notorious for overfitting training data. A very simple way to see this borne out is to see the effect of increasing number of trees on train and test rmse. Specifically, in the model above, try running the models with the following number of trees: 200, 1e3, 1e4, 1e6. To avoid the folly of overfitting, it is best to tune the model using cross-validation. In the code that follows, we will tune a gradient boosting model using interaction depth, shrinkage and minobsinnode.
+#
+# The code below uses a garbage collector to hide from us the long list of models tested.
+
+library(caret)
+set.seed(617)
+trControl = trainControl(method="cv",number=5)
+tuneGrid = expand.grid(n.trees = 500,
+                       interaction.depth = c(1,2,3),
+                       shrinkage = (1:100)*0.001,
+                       n.minobsinnode=c(5,10,15))
+garbage = capture.output(cvModel <- train(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+                                          data=train,
+                                          method="gbm",
+                                          trControl=trControl,
+                                          tuneGrid=tuneGrid))
+cvBoost = gbm(price ~room_type+accommodates+bathrooms+bedrooms+beds+bed_type+square_feet+neighbourhood_group_cleansed+host_is_superhost+host_response_time+calculated_host_listings_count+cleaning_fee+number_of_reviews+reviews_per_month+last_review+review_scores_rating+review_scores_cleanliness+review_scores_checkin+review_scores_communication+review_scores_location+review_scores_value+extra_people+is_business_travel_ready+availability_30+availability_90+availability_365+cancellation_policy,
+              data=train,
+              distribution="gaussian",
+              n.trees=cvModel$bestTune$n.trees,
+              interaction.depth=cvModel$bestTune$interaction.depth,
+              shrinkage=cvModel$bestTune$shrinkage,
+              n.minobsinnode = cvModel$bestTune$n.minobsinnode)
+pred = predict(cvBoost,test,n.trees=500)
+rmse_cv_boost = sqrt(mean((pred-train$price)^2)); rmse_cv_boost
+
+
+# Boosting with xgboost
+# XGBoost is an optimized distributed gradient boosting library designed to be highly efficient, flexible and portable.
+#
+# The algorthim is also a bit picky about the format of variables used. All factor class variables need to be dummy coded and fed into the model as a matrix. To do this, we will dummy code using library(vtreat)
+
+library(vtreat)
+## Loading required package: wrapr
+trt = designTreatmentsZ(dframe = train,
+                        varlist = names(train)[2:6])
+
+newvars = trt$scoreFrame[trt$scoreFrame$code%in% c('clean','lev'),'varName']
+
+train_input = prepare(treatmentplan = trt,
+                      dframe = train,
+                      varRestriction = newvars)
+test_input = prepare(treatmentplan = trt,
+                     dframe = test,
+                     varRestriction = newvars)
+head(train_input)
+
+# Like all boosting models, xgboost can overfit the train data. To identify the optimal nrounds, we use a cross-validation function within xgboost.
+
+library(xgboost); library(caret)
+set.seed(617)
+tune_nrounds = xgb.cv(data=as.matrix(train_input),
+                      label = train$earn,
+                      nrounds=250,
+                      nfold = 5,
+                      verbose = 0)
+
+ggplot(data=tune_nrounds$evaluation_log, aes(x=iter, y=test_rmse_mean))+
+  geom_point(size=0.4, color='sienna')+
+  geom_line(size=0.1, alpha=0.1)+
+  theme_bw()
+
+# obvious from the above chart, the optimal nrounds is a rather small number
+
+which.min(tune_nrounds$evaluation_log$test_rmse_mean)
+
+# Next, we use xgboost to fit the train data with nrounds = 6 and apply the model to the test data.
+
+xgboost2= xgboost(data=as.matrix(train_input),
+                  label = train$earn,
+                  nrounds=6,
+                  verbose = 0)
+pred = predict(xgboost2,
+               newdata=as.matrix(test_input))
+rmse_xgboost = sqrt(mean((pred - test$earn)^2)); rmse_xgboost
+
+```
+
+**When I try to perform Random Forest, Tuned Random Forest, Forest with Ranger and Boosting with cross-validation and  Boosting with XGBoost it took so long time, so I decided to cut the process by terminating R.**
+
+#### 5.FINAL BOOSTING MODELS
+After perform  Data Cleaning Complexity, and include some wordcount and amenities, this is my final model with boosting method.
+
+```{r finalBoosting}
+
+library(gbm)
+set.seed(1708)
+
+boostModelFinal = gbm(price ~ meanPrice+meanPriceGC + level_nc + bedrooms + room_type + property_type + bathrooms + beds
+                      + accommodates + cleaning_fee + monthly_price + security_deposit + minimum_nights + maximum_nights  + neighbourhood_group_cleansed
+                      + host_is_superhost + availability_30 + availability_60 + availability_90 + availability_365
+                      + review_scores_rating + number_of_reviews + last_review_days + first_review_days + review_scores_cleanliness + review_scores_accuracy
+                      + wc_transit + wc_summary+ wc_description+ wc_host_about + wc_neighborhood_overview #word count
+                      + host_listings_count + host_since_days + reviews_per_month + host_has_profile_pic
+                      + extra_people + guests_included + cancellation_policy
+                      + Airconditioning + Dryer + Elevator + Familykidfriendly + Freestreetparking #amenities
+                      + Hairdryer + Iron + Oven + Refrigerator + Shampoo + Selfcheckin  #amenities
+               ,data = train, distribution = "gaussian",
+               n.trees = 30000,
+               interaction.depth = 5,
+               shrinkage = 0.005,
+               n.minobsinnode = 5)
+
+summary(boostModelFinal)
+
+# > summary(boostModelFinal)
+#                                                       var      rel.inf
+# room_type                                       room_type 1.563236e+01
+# level_nc                                         level_nc 1.278196e+01
+# cleaning_fee                                 cleaning_fee 1.152684e+01
+# meanPrice                                       meanPrice 1.135021e+01
+# bathrooms                                       bathrooms 8.906089e+00
+# accommodates                                 accommodates 8.180623e+00
+# bedrooms                                         bedrooms 7.584475e+00
+# property_type                               property_type 1.952283e+00
+# last_review_days                         last_review_days 1.809324e+00
+# extra_people                                 extra_people 1.211991e+00
+# reviews_per_month                       reviews_per_month 1.170301e+00
+# first_review_days                       first_review_days 1.169714e+00
+# security_deposit                         security_deposit 1.148060e+00
+# availability_365                         availability_365 1.143510e+00
+# host_since_days                           host_since_days 1.104594e+00
+# guests_included                           guests_included 1.022857e+00
+# review_scores_rating                 review_scores_rating 8.872002e-01
+# wc_description                             wc_description 8.523674e-01
+# minimum_nights                             minimum_nights 8.100015e-01
+# availability_90                           availability_90 7.964633e-01
+# beds                                                 beds 7.514348e-01
+# wc_summary                                     wc_summary 6.716034e-01
+# wc_host_about                               wc_host_about 6.423811e-01
+# wc_neighborhood_overview         wc_neighborhood_overview 6.422659e-01
+# availability_30                           availability_30 6.408232e-01
+# maximum_nights                             maximum_nights 6.261829e-01
+# wc_transit                                     wc_transit 6.011438e-01
+# availability_60                           availability_60 5.548520e-01
+# review_scores_cleanliness       review_scores_cleanliness 5.226060e-01
+# Elevator                                         Elevator 5.073746e-01
+# number_of_reviews                       number_of_reviews 4.992509e-01
+# Dryer                                               Dryer 3.771173e-01
+# host_listings_count                   host_listings_count 3.560812e-01
+# review_scores_accuracy             review_scores_accuracy 2.767238e-01
+# neighbourhood_group_cleansed neighbourhood_group_cleansed 2.054203e-01
+# meanPriceGC                                   meanPriceGC 1.965436e-01
+# cancellation_policy                   cancellation_policy 1.920559e-01
+# Familykidfriendly                       Familykidfriendly 1.659265e-01
+# Shampoo                                           Shampoo 9.618331e-02
+# Iron                                                 Iron 7.941037e-02
+# Airconditioning                           Airconditioning 7.126691e-02
+# host_is_superhost                       host_is_superhost 5.958022e-02
+# Hairdryer                                       Hairdryer 5.675297e-02
+# Selfcheckin                                   Selfcheckin 5.610821e-02
+# Oven                                                 Oven 4.931608e-02
+# Freestreetparking                       Freestreetparking 3.355931e-02
+# Refrigerator                                 Refrigerator 2.479120e-02
+# host_has_profile_pic                 host_has_profile_pic 1.848893e-03
+# monthly_price                               monthly_price 1.806151e-04
+# 
+# ## predict train dataset
+# predboostModelFinal = predict(predboostModelFinal, n.trees = 30000)
+# RMSE(predboostModelFinal, train$price)
+# # [1] 34.0081
+# 
+# ## predict scoring dataset
+# predboostModelFinal_test = predict(boostModelFinal, n.trees = 30000, newdata = test)
+# 
+# #FILE SUBMISSION
+# submission <- data.frame(id = test$id, price = predboostModelFinal_test)
+# write.csv(x = submission, file = "Model Boost Final Predictions.csv", row.names = FALSE)
+# 
+# subMix = read.csv('../Data/Model Boost Final Predictions.csv')
+# sum(is.na(subMix))
+
+
+```
+
+## Part 2 - Lessons Learned
+The Lesson I have learned from the experience of AirBnB Kaggle Competition including more understanding in doing data analysis such as read the data, perform exploratory data, data wrangling, cleaning and tyding the data. Then perform first data analysis modeling using several linear regression approaches. Following feature selection to gain more relevance variables, then using the result to perform more complex modeling like Tree model, Boosting, Random forest etc.The final step I learn how to find the insight from the data and learn how to communicate the result using data visualization.
+
+Most of my time is spent to find the most relevance variables, fit it into the model and when the model is too complex, it will need more running time of R to process it and  get the result. As it said, most of the data scientist time is spent simply finding, cleansing, and organizing data, leaving only small amount of their time to actually perform analysis modelling” 
+
+More importantly, I realize that the level of complexity of the model and variables probably could lead to overfitting problem. 
+It is important to use the common knowledge and use a good intuition how to logically select the relevant variables for a model, like this quotes:
+
+**“It is through science that we prove. But it is through intuition that we discover” — Henri Poincare**
+
+## Part 3 - Report Summarizing {.tabset}
+
+To summarize this project, I would describe:
+
+### The insights from exploring the data
+According to this kaggle prediction, I can inference the price of an Airbnb rental affected by neighbourhood, room type, number of bedrooms, accommodates, square_feet, etc. Based on the prediction model result, we can suggest the best price that the landlord offer to the renters and we we can also customize the housing recommendation based on customers price preference.
+
+Before doing a deep analysis using different approaches of  modelling, I think the most significant independent variable to predict the price would be mainly related to LOCATION. However, after analyze the result, some other variables seem to be more significant like number of reviews, score reviews, availability, cancellation policy and the credibility of the host. Also for such kind of online rental like AirBnB, the detail description of apartment including summary,host_about, neighborhood_overview etc would be affected the popularity, so I suggest to include the detail description/ summary in the listing to gain more users and popularity.
+
+
+### Efforts to prepare the data
+I need to do the data wrangling, cleaning and tyding sevaral times, go and back to first process and do it again and again.
+At the first time, there are so many errors and I learn how to solve it using helper from many sources like website and R documentation.
+
+### Exploring Analysis techniques 
+As aforementioned, I perform several analysis technique and I think almost trying all the methods from classes, even I can not find the lowest RMSE value though. By exploring analysis techniques, I get more handfuls technical skill of Analysis techniques.
+
+### The failed steps or missteps along the way
+*Some of my models like XGBoosting Model, Tuning the Tree are not working and still confuse with the error.
+*When I perform Dimension Reduction Technique, I found some errors that I decided to cut the process.
+*Performing several technique of Forward selection and Hybrid selection would result insignificant difference, so I think we just need to choose one for time efficiency.
+
+
+
+
+
